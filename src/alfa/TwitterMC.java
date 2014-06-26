@@ -77,6 +77,9 @@ public class TwitterMC {
 
 	public static Random rnd;
 
+	/** ノイズ */
+	private static int noise;
+
 	/**
 	 * 初期化
 	 *
@@ -91,7 +94,7 @@ public class TwitterMC {
 	 * @param na
 	 */
 	public static void init(int l, int m, int t, int n, int sc, int type,
-			double e, double ta, double g, int ns, int na) {
+			double e, double ta, double g, int ns, int na, int i) {
 		iterationNum = l;
 		episordnum = m;
 		stepNum = t;
@@ -109,6 +112,7 @@ public class TwitterMC {
 		visits = getInitVisits(statesNum, actionsNum);
 		drewards = new double[episordnum][stepNum];
 		rnd = new Random();
+		noise = i;
 	}
 
 	public static void start() {
