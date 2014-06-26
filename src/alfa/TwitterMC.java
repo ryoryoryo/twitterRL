@@ -77,6 +77,9 @@ public class TwitterMC {
 
 	public static Random rnd;
 
+	/** ノイズ */
+	private static int noise;
+
 	/**
 	 * 初期化
 	 *
@@ -91,7 +94,7 @@ public class TwitterMC {
 	 * @param na
 	 */
 	public static void init(int l, int m, int t, int n, int sc, int type,
-			double e, double ta, double g, int ns, int na) {
+			double e, double ta, double g, int ns, int na, int i) {
 		iterationNum = l;
 		episordnum = m;
 		stepNum = t;
@@ -109,6 +112,7 @@ public class TwitterMC {
 		visits = getInitVisits(statesNum, actionsNum);
 		drewards = new double[episordnum][stepNum];
 		rnd = new Random();
+		noise = i;
 	}
 
 	public static void start() {
@@ -213,7 +217,7 @@ public class TwitterMC {
 	 */
 	private static int[] simpleEnvironmentSimulate(int[] state, int t) {
 		Random rnd = new Random();
-		for (int i = 0; i < state.length; i++) {
+		for (int i = 0; i < state.length - noise; i++) {
 			int ran = rnd.nextInt(10);
 
 			if ((0 <= t && t <= 12) || t == 46 || t == 47) {
@@ -291,6 +295,18 @@ public class TwitterMC {
 						}
 					}
 				}
+			}
+		}
+
+		// ノイズユーザ
+		for (int i = state.length - noise; i < state.length; i++) {
+			int ran = rnd.nextInt(3);
+			if (ran == 0) {
+				state[i] = STATE_N;
+			} else if (ran == 1) {
+				state[i] = STATE_F;
+			} else if (ran == 2) {
+				state[i] = STATE_U;
 			}
 		}
 		return state;
