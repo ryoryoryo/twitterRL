@@ -159,14 +159,14 @@ public class TwitterMC {
 			for (int m = 0; m < episordnum; m++) {
 				average += results[l][m];
 			}
-			System.out.println(l + "\t" + average);// / episordnum
+			System.out.println(l + "\t" + average / episordnum);//
 		}
-//		System.out.println("すべて");
-//		for (int l = 0; l < iterationNum; l++) {
-//			for (int m = 0; m < episordnum; m++) {
-//				System.out.println(l + "\t" + m + "\t" + results[l][m]);
-//			}
-//		}
+		// System.out.println("すべて");
+		// for (int l = 0; l < iterationNum; l++) {
+		// for (int m = 0; m < episordnum; m++) {
+		// System.out.println(l + "\t" + m + "\t" + results[l][m]);
+		// }
+		// }
 	}
 
 	/**
@@ -216,23 +216,23 @@ public class TwitterMC {
 		for (int i = 0; i < state.length; i++) {
 			int ran = rnd.nextInt(10);
 			// すべての場合で0.6でノンアクティブ
-			if (ran < 6) {
+			if (ran < 4) {
 				state[i] = STATE_N;
 			} else {
 				if (state[i] == STATE_N) {
-					if (ran == 6 || ran == 7) {
+					if (ran == 4 || ran == 5 || ran == 6) {
 						state[i] = STATE_U;
-					} else if (ran == 8 || ran == 9) {
+					} else if (ran == 7 || ran == 8 || ran == 9) {
 						state[i] = STATE_F;
 					}
 				} else if (state[i] == STATE_U) {
-					if (ran == 6) {
+					if (ran == 4 || ran == 5) {
 						state[i] = STATE_F;
 					} else {
 						state[i] = STATE_U;
 					}
 				} else if (state[i] == STATE_F) {
-					if (ran == 6) {
+					if (ran == 4 || ran == 5) {
 						state[i] = STATE_U;
 					} else {
 						state[i] = STATE_F;
