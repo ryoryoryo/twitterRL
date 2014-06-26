@@ -1,7 +1,5 @@
 package alfa;
 
-
-
 public class TwitterAlfaSimulator {
 	public static void main(String[] args) {
 		int L = 100; // 反復回数
@@ -19,11 +17,14 @@ public class TwitterAlfaSimulator {
 		}
 		int N_ACTIONS = 2; // 行動数 ツイートする・しない
 
-		TwitterMC.init(L, M, T, N, STATE_CATEGO, PTYPE, EPSILON, TAU, GAMMA,
-				N_STATES, N_ACTIONS);
-		 long start = System.currentTimeMillis();
-		TwitterMC.start();
-		long stop = System.currentTimeMillis();
-	    System.out.println("run time:" + (stop - start)/1000 + "s");
+		for (int i = 1; i <= 8; i++) {
+			double param = 0.1 * i;
+			TwitterMC.init(L, M, T, N, STATE_CATEGO, PTYPE, EPSILON, TAU,
+					param, N_STATES, N_ACTIONS);
+			long start = System.currentTimeMillis();
+			TwitterMC.start();
+			long stop = System.currentTimeMillis();
+			System.out.println("run time:" + (stop - start) / 1000 + "s");
+		}
 	}
 }
