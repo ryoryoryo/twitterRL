@@ -159,14 +159,14 @@ public class TwitterMC {
 			for (int m = 0; m < episordnum; m++) {
 				average += results[l][m];
 			}
-			System.out.println(l + "\t" + average);// / episordnum
+			System.out.println(l + "\t" + average / episordnum);//
 		}
-//		System.out.println("すべて");
-//		for (int l = 0; l < iterationNum; l++) {
-//			for (int m = 0; m < episordnum; m++) {
-//				System.out.println(l + "\t" + m + "\t" + results[l][m]);
-//			}
-//		}
+		// System.out.println("すべて");
+		// for (int l = 0; l < iterationNum; l++) {
+		// for (int m = 0; m < episordnum; m++) {
+		// System.out.println(l + "\t" + m + "\t" + results[l][m]);
+		// }
+		// }
 	}
 
 	/**
