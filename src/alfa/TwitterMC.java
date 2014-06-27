@@ -249,12 +249,12 @@ public class TwitterMC {
 
 		// ノイズユーザ
 		for (int i = state.length - noise; i < state.length; i++) {
-			int ran = rnd.nextInt(3);
-			if (ran == 0) {
+			int ran = rnd.nextInt(10);
+			if (ran > 0 && ran < 8) {
 				state[i] = STATE_N;
-			} else if (ran == 1) {
+			} else if (ran == 8) {
 				state[i] = STATE_F;
-			} else if (ran == 2) {
+			} else if (ran == 9) {
 				state[i] = STATE_U;
 			}
 		}
