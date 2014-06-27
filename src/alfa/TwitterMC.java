@@ -111,6 +111,14 @@ public class TwitterMC {
 		rnd = new Random();
 	}
 
+	private static void reinit() {
+		states = new int[episordnum][stepNum];
+		actions = new int[episordnum][stepNum];
+		rewards = new int[episordnum][stepNum];
+		visits = getInitVisits(statesNum, actionsNum);
+		drewards = new double[episordnum][stepNum];
+	}
+
 	public static void start() {
 		double q[][] = new double[statesNum][actionsNum]; // 状態・行動価値関数(バックアップテーブル)
 
@@ -150,6 +158,7 @@ public class TwitterMC {
 
 			// 政策評価
 			q = evaluatePolicy(q);
+			reinit();
 		}
 
 		// 出力
