@@ -22,8 +22,8 @@ public class TwitterAlfaSimulator {
 		long start = System.currentTimeMillis();
 		TwitterMC.init(L, M, T, N, STATE_CATEGO, PTYPE, EPSILON, TAU, GAMMA,
 				N_STATES, N_ACTIONS);
+		TwitterMC.start();
 		long stop = System.currentTimeMillis();
 	    System.out.println("run time:" + (stop - start) / 1000 + "s");
-		TwitterMC.start();
 	}
 }
