@@ -1,8 +1,14 @@
 package alfa;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import model.TwitterUser;
+import model.UserTweet;
+import rlanalysis.RLTweetAnalysisUtil;
+import rlanalysis.RLUserAnalysisUtil;
 
 public class TwitterMC {
 	/** 反復回数 */
@@ -79,6 +85,12 @@ public class TwitterMC {
 
 	public static Random rnd;
 
+	/** ユーザ一覧 */
+	private static List<TwitterUser> userList;
+
+	/** ユーザごとのツイート一覧 */
+	private static Map<String, List<UserTweet>> userTweetMap;
+
 	/**
 	 * 初期化
 	 *
@@ -92,13 +104,16 @@ public class TwitterMC {
 	 * @param ns
 	 * @param na
 	 */
-	public static void init(int l, int m, int t, int n, int sc, int type,
-			double e, double ta, double g, int ns, int na) {
+	public static void init(int l, int m, int t, int n, int type, double e,
+			double ta, double g, int ns, int na) {
+		userList = RLUserAnalysisUtil.getUniqueUserList(RLUserAnalysisUtil
+				.getUserList());
+		userTweetMap = RLTweetAnalysisUtil.getUsersTweets(userList);
 		iterationNum = l;
 		episordnum = m;
 		stepNum = t;
 		statesLength = n;
-		statesFeatureNum = sc;
+		statesFeatureNum = userList.size();
 		ptype = type;
 		epsilon = e;
 		tau = ta;

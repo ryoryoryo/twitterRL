@@ -20,7 +20,7 @@ public class TwitterAlfaSimulator {
 		int N_ACTIONS = 2; // 行動数 ツイートする・しない
 
 		long start = System.currentTimeMillis();
-		TwitterMC.init(L, M, T, STATE_CATEGO, N, PTYPE, EPSILON, TAU, GAMMA,
+		TwitterMC.init(L, M, T, STATE_CATEGO, PTYPE, EPSILON, TAU, GAMMA,
 				N_STATES, N_ACTIONS);
 		TwitterMC.start();
 		long stop = System.currentTimeMillis();
