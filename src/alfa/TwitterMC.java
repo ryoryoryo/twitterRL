@@ -1,5 +1,7 @@
 package alfa;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class TwitterMC {
@@ -49,7 +51,7 @@ public class TwitterMC {
 	private static double drewards[][];
 
 	/** 遷移群 */
-	private static int visits[][];
+	private static Map<Integer, Map<Integer, Integer>> visits;// statesNum×actionsNum行列
 
 	/** 現在の行動 */
 	private static int currentAction;
@@ -106,7 +108,7 @@ public class TwitterMC {
 		states = new int[episordnum][stepNum];
 		actions = new int[episordnum][stepNum];
 		rewards = new int[episordnum][stepNum];
-		visits = getInitVisits(statesNum, actionsNum);
+		visits = new HashMap<Integer, Map<Integer, Integer>>();
 		drewards = new double[episordnum][stepNum];
 		rnd = new Random();
 	}
@@ -115,12 +117,12 @@ public class TwitterMC {
 		states = new int[episordnum][stepNum];
 		actions = new int[episordnum][stepNum];
 		rewards = new int[episordnum][stepNum];
-		visits = getInitVisits(statesNum, actionsNum);
+		visits.clear();
 		drewards = new double[episordnum][stepNum];
 	}
 
 	public static void start() {
-		double q[][] = new double[statesNum][actionsNum]; // 状態・行動価値関数(バックアップテーブル)
+		Map<Integer, double[]> q = new HashMap<Integer, double[]>(); // 状態・行動価値関数(バックアップテーブル)statesNum×actionsNum
 
 		// 政策反復
 		double results[][] = new double[iterationNum][episordnum]; // 結果
@@ -129,7 +131,7 @@ public class TwitterMC {
 
 			// エピソード
 			for (int m = 0; m < episordnum; m++) {
-				// System.out.println("episord " + m + "/" + episordnum);
+				System.out.println("episord " + m + "/" + episordnum);
 				int engagementSum = 0;
 				int state[] = new int[statesLength];// 状態
 
@@ -144,7 +146,23 @@ public class TwitterMC {
 					states[m][t] = encodeState;// 状態更新
 					actions[m][t] = currentAction;// 行動更新
 					rewards[m][t] = currentReward;// 報酬更新
-					visits[encodeState][currentAction] += 1;// 遷移更新
+					// 遷移更新
+					if (visits.containsKey(encodeState)) {
+						Map<Integer, Integer> tmpMap = visits.get(encodeState);
+						if (tmpMap.containsKey(currentAction)) {
+							int value = tmpMap.get(currentAction);
+							value++;
+							tmpMap.put(currentAction, value);
+							visits.put(encodeState, tmpMap);
+						} else {
+							tmpMap.put(currentAction, 2);
+							visits.put(encodeState, tmpMap);
+						}
+					} else {
+						Map<Integer, Integer> tmpMap = new HashMap<Integer, Integer>();
+						tmpMap.put(currentAction, 2);
+						visits.put(encodeState, tmpMap);
+					}
 					engagementSum += currentReward;
 
 					// 割引報酬和の計算
@@ -156,6 +174,9 @@ public class TwitterMC {
 				results[l][m] = engagementSum; // 結果
 			}
 
+			if (l == 2) {
+				System.out.println();
+			}
 			// 政策評価
 			q = evaluatePolicy(q);
 			reinit();
@@ -199,15 +220,8 @@ public class TwitterMC {
 			currentReward = 0;
 		} else {
 			int engagement = 0;
-			for (int i = 0; i < state.length; i++) {
-				if (state[i] == STATE_N) {
-					engagement += 0;
-				} else if (state[i] == STATE_F) {
-					engagement += 10;
-				} else if (state[i] == STATE_U) {
-					engagement += -1;
-				}
-			}
+			engagement += state[1] * 10;
+			engagement -= state[2] * 1;
 			currentReward = engagement;
 		}
 
@@ -223,31 +237,14 @@ public class TwitterMC {
 	private static int[] simpleEnvironmentSimulate(int[] state) {
 		Random rnd = new Random();
 		for (int i = 0; i < state.length; i++) {
-			int ran = rnd.nextInt(10);
+			int ran = rnd.nextInt(200);
 			// すべての場合で0.6でノンアクティブ
-			if (ran < 6) {
-				state[i] = STATE_N;
-			} else {
-				if (state[i] == STATE_N) {
-					if (ran == 6 || ran == 7) {
-						state[i] = STATE_U;
-					} else if (ran == 8 || ran == 9) {
-						state[i] = STATE_F;
-					}
-				} else if (state[i] == STATE_U) {
-					if (ran == 6) {
-						state[i] = STATE_F;
-					} else {
-						state[i] = STATE_U;
-					}
-				} else if (state[i] == STATE_F) {
-					if (ran == 6) {
-						state[i] = STATE_U;
-					} else {
-						state[i] = STATE_F;
-					}
-				}
-			}
+			int nonActiveNum = 500 + ran;
+			int funNum = rnd.nextInt(100) + 100;
+			int untiNum = statesFeatureNum - nonActiveNum - funNum;
+			state[0] = nonActiveNum;
+			state[1] = funNum;
+			state[2] = untiNum;
 		}
 		return state;
 	}
@@ -259,9 +256,15 @@ public class TwitterMC {
 	 * @param q
 	 * @return
 	 */
-	public static double[] improvePolicy(int encodeState, double q[][]) {
+	public static double[] improvePolicy(int encodeState,
+			Map<Integer, double[]> q) {
 		double policy[] = new double[actionsNum];
-		double currentq[] = q[encodeState];
+		double currentq[];
+		if (q.containsKey(encodeState)) {
+			currentq = q.get(encodeState);
+		} else {
+			currentq = new double[actionsNum];
+		}
 		if (ptype == IMPROVE_POLICY_TYPE_GREEDY) {
 			policy[getMaxAction(currentq)] = 1;
 		} else if (ptype == IMPROVE_POLICY_TYPE_EGREEDY) {
@@ -316,7 +319,7 @@ public class TwitterMC {
 	 * @param q
 	 * @return
 	 */
-	public static double[][] evaluatePolicy(double[][] q) {
+	public static Map<Integer, double[]> evaluatePolicy(Map<Integer, double[]> q) {
 		for (int m = 0; m < episordnum; m++) {
 			for (int t = 0; t < stepNum; t++) {
 				int s = states[m][t];
@@ -324,12 +327,29 @@ public class TwitterMC {
 				if (t != 0 && s == 0) {
 					break;
 				}
-				q[s][a] += drewards[m][t];
+				if (q.containsKey(s)) {
+					double tmp[] = q.get(s);
+					tmp[a] += drewards[m][t];
+					q.put(s, tmp);
+				} else {
+					double tmp[] = new double[actionsNum];
+					tmp[a] += drewards[m][t];
+					q.put(s, tmp);
+				}
 			}
 		}
 		for (int i = 0; i < statesNum; i++) {
-			for (int j = 0; j < actionsNum; j++) {
-				q[i][j] = q[i][j] / visits[i][j];
+			if (q.containsKey(i)) {
+				double actions[] = q.get(i);
+				for (int j = 0; j < actionsNum; j++) {
+					if (visits.containsKey(i)) {
+						Map<Integer, Integer> tmpMap = visits.get(i);
+						if (tmpMap.containsKey(j)) {
+							int value = tmpMap.get(j);
+							actions[j] = actions[j] / value;
+						}
+					}
+				}
 			}
 		}
 		return q;
@@ -359,10 +379,7 @@ public class TwitterMC {
 	 * @return
 	 */
 	private static int encodeState(int state[]) {
-		StringBuffer numlist = new StringBuffer();
-		for (int i = 0; i < state.length; i++) {
-			numlist.append(state[i]);
-		}
-		return Integer.parseInt(numlist.toString(), statesFeatureNum);
+		return state[0] + state[1] * statesFeatureNum + state[2]
+				* statesFeatureNum * statesFeatureNum;
 	}
 }
