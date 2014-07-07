@@ -28,7 +28,7 @@ public class TwitterDataUtil {
 		getRetweets();
 	}
 
-	private static void getRetweets() {
+	private static List<UserTweet> getRetweets() {
 		List<TwitterUser> userlist = RLUserAnalysisUtil.getUserList();
 		List<String> retweetIds = new ArrayList<String>();
 		for (TwitterUser user : userlist) {
@@ -44,7 +44,7 @@ public class TwitterDataUtil {
 				tweetlist.add(tweet);
 			}
 		}
-		System.out.println(tweetlist.size());
+		return tweetlist;
 	}
 
 	/**
@@ -168,7 +168,7 @@ public class TwitterDataUtil {
 		try {
 			BufferedWriter bw = new BufferedWriter(
 					new OutputStreamWriter(new FileOutputStream(OUTPUT
-							+ "originator-tweet-state.txt"), "UTF-8"));
+							+ "originator-tweet-state-first.txt"), "UTF-8"));
 			// 配信ツイートに対するユーザの状態変化
 			Map<Integer, List<UserTweet>> originatorTimeTweets = getLearningOriginatorTweets(originatorTweetList); // 発信者の時間帯ごとツイート群
 			for (int step : originatorTimeTweets.keySet()) {// ステップ
