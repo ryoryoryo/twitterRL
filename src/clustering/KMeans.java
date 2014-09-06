@@ -4,12 +4,21 @@ import java.util.Random;
 
 /**
  * k-means <br>
- * 参考：http://msdn.microsoft.com/ja-jp/magazine/jj891054.aspx
+ * Reference：http://msdn.microsoft.com/ja-jp/magazine/jj891054.aspx
  *
  * @author miyagi
  *
  */
 public class KMeans {
+
+	/** クラスタ */
+	private static int[] clustering;
+
+	/** 平均 */
+	private static double means[][];
+
+	/** 重心 */
+	private static double centroids[][];
 
 	/**
 	 * 実行
@@ -17,24 +26,33 @@ public class KMeans {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		KMeans cluster = new KMeans();
+
 		// パラメータ
 		int numClusters = 3; // k(クラスタ数)
 		int maxCount = 30; // 最大繰り返し数
 
 		// 入力データ
-		double[][] rawData = readTestRawData();
+		double[][] rawData = cluster.readTestRawData();
 
 		// 実行
-		int[] clustering = executeClustering(rawData, numClusters, maxCount);
+		int[] clustering = cluster.executeClustering(rawData, numClusters,
+				maxCount);
 
 		// 出力
 		for (int i = 0; i < clustering.length; i++) {
 			System.out.println(i + "\t" + rawData[i][0] + ":" + rawData[i][1]
 					+ "\t" + clustering[i]);
 		}
+
+		for (int i = 0; i < centroids.length; i++) {
+			for (int j = 0; j < centroids[i].length; j++) {
+				System.out.println(centroids[i][j]);
+			}
+		}
 	}
 
-	private static double[][] readTestRawData() {
+	public double[][] readTestRawData() {
 		double[][] rawData = new double[20][2];
 		rawData[0] = new double[] { 65.0, 220.0 };
 		rawData[1] = new double[] { 73.0, 160.0 };
@@ -57,6 +75,60 @@ public class KMeans {
 		rawData[18] = new double[] { 68.0, 210.0 };
 		rawData[19] = new double[] { 61.0, 130.0 };
 		return rawData;
+	}
+
+	/**
+	 * クラスタリング実行
+	 *
+	 * @param rawData
+	 * @param numClusters
+	 * @param numAttributes
+	 * @param maxCount
+	 * @return
+	 */
+	public int[] executeClustering(double[][] rawData, int numClusters,
+			int maxCount) {
+		int numTuplues = rawData.length;
+		int numAttributes = rawData[0].length;
+		boolean changedFlag = true;
+		int count = 0;
+
+		clustering = initClustering(numTuplues, numClusters, 0); // クラスタ初期化
+		means = new double[numClusters][numAttributes]; // 平均タプル初期化
+		centroids = new double[numClusters][numAttributes]; // 重心初期化
+
+		means = updateMeans(rawData, clustering, means);
+		centroids = updateCentroids(rawData, clustering, means, centroids);
+
+		// 繰り返し
+		while (changedFlag == true && count < maxCount) {
+			count++;
+			changedFlag = assignCluster(rawData, clustering, centroids);
+			means = updateMeans(rawData, clustering, means);
+			centroids = updateCentroids(rawData, clustering, means, centroids);
+		}
+		return clustering;
+	}
+
+	/**
+	 * クラスタ初期化
+	 *
+	 * @param numTuples
+	 * @param numClusters
+	 * @param randomSeed
+	 * @return
+	 */
+	private static int[] initClustering(int numTuples, int numClusters,
+			int randomSeed) {
+		Random random = new Random(randomSeed);
+		int[] clustering = new int[numTuples];
+		for (int i = 0; i < numClusters; i++) {
+			clustering[i] = i;
+		}
+		for (int i = numClusters; i < clustering.length; i++) {
+			clustering[i] = random.nextInt(numClusters);
+		}
+		return clustering;
 	}
 
 	/**
@@ -198,57 +270,27 @@ public class KMeans {
 		return minIndex;
 	}
 
-	/**
-	 * クラスタリング実行
-	 *
-	 * @param rawData
-	 * @param numClusters
-	 * @param numAttributes
-	 * @param maxCount
-	 * @return
-	 */
-	private static int[] executeClustering(double[][] rawData, int numClusters,
-			int maxCount) {
-		int numTuplues = rawData.length;
-		int numAttributes = rawData[0].length;
-		boolean changedFlag = true;
-		int count = 0;
-
-		int[] clustering = initClustering(numTuplues, numClusters, 0); // クラスタ初期化
-		double means[][] = new double[numClusters][numAttributes]; // 平均タプル初期化
-		double centroids[][] = new double[numClusters][numAttributes]; // 重心初期化
-
-		means = updateMeans(rawData, clustering, means);
-		centroids = updateCentroids(rawData, clustering, means, centroids);
-
-		// 繰り返し
-		while (changedFlag == true && count < maxCount) {
-			count++;
-			changedFlag = assignCluster(rawData, clustering, centroids);
-			means = updateMeans(rawData, clustering, means);
-			centroids = updateCentroids(rawData, clustering, means, centroids);
-		}
+	public static int[] getClustering() {
 		return clustering;
 	}
 
-	/**
-	 * クラスタ初期化
-	 *
-	 * @param numTuples
-	 * @param numClusters
-	 * @param randomSeed
-	 * @return
-	 */
-	private static int[] initClustering(int numTuples, int numClusters,
-			int randomSeed) {
-		Random random = new Random(randomSeed);
-		int[] clustering = new int[numTuples];
-		for (int i = 0; i < numClusters; i++) {
-			clustering[i] = i;
-		}
-		for (int i = numClusters; i < clustering.length; i++) {
-			clustering[i] = random.nextInt(numClusters);
-		}
-		return clustering;
+	public static void setClustering(int[] clustering) {
+		KMeans.clustering = clustering;
+	}
+
+	public static double[][] getMeans() {
+		return means;
+	}
+
+	public static void setMeans(double means[][]) {
+		KMeans.means = means;
+	}
+
+	public static double[][] getCentroids() {
+		return centroids;
+	}
+
+	public static void setCentroids(double centroids[][]) {
+		KMeans.centroids = centroids;
 	}
 }
