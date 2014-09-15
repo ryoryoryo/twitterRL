@@ -6,5 +6,7 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry combineaccessrules="false" kind="src" path="/TwitterScraping"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.3.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>
