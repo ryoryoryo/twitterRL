@@ -17,7 +17,7 @@ import data.DataUtils;
  */
 public class TwitterTDLeastSquares {
 
-	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver1/input/";
+	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver1/input2/";
 
 	/** 状態ファイルパス */
 	public static final String STATE_FILE_PASS = INPUT_DIR
@@ -124,8 +124,13 @@ public class TwitterTDLeastSquares {
 	 * @return
 	 */
 	private static int initActionNum() {
-		int[] tmp = actionMap.get(FIRST_TIME);
-		return tmp.length;
+		int max = 0;
+		for (int time : actionMap.keySet()) {
+			if (actionMap.get(time).length > max) {
+				max = actionMap.get(time).length;
+			}
+		}
+		return max;
 	}
 
 	/**
@@ -135,7 +140,7 @@ public class TwitterTDLeastSquares {
 		double[][] results = new double[iterationNum][episordNum]; // 結果
 		for (int l = 0; l < iterationNum; l++) {
 			System.out.println("iteration:" + l);
-			if(l == 1) {
+			if (l == 1) {
 				System.out.println("stop");
 			}
 			for (int e = 0; e < episordNum; e++) {
@@ -146,14 +151,16 @@ public class TwitterTDLeastSquares {
 					double[] q = getQ(state); // 現在状態価値 actionL
 					updatePolicy(q); // 政策改善 actionL
 					int action = selectAction(time, policy); // 行動選択
-					double reward = doAction(time, action); // 行動実行
-					rewardSum += reward;
-					if (t > 0) {
-						updateX(e, t, state, action);
-						updateR(e, t, reward);
+					if (action != Integer.MAX_VALUE) {
+						double reward = doAction(time, action); // 行動実行
+						rewardSum += reward;
+						if (t > 0) {
+							updateX(e, t, state, action);
+							updateR(e, t, reward);
+						}
+						paction = action;
+						pstate = state;
 					}
-					paction = action;
-					pstate = state;
 				}
 				results[l][e] = rewardSum;
 			}
@@ -283,7 +290,7 @@ public class TwitterTDLeastSquares {
 			}
 			count++;
 		}
-		return actions[0];
+		return Integer.MAX_VALUE;
 	}
 
 	/**
@@ -481,7 +488,7 @@ public class TwitterTDLeastSquares {
 			double average = 0;
 			for (int j = 0; j < results[i].length; j++) {
 				average += results[i][j];
-//				System.out.println(i + ":" + j + "\t" + results[i][j]);
+				// System.out.println(i + ":" + j + "\t" + results[i][j]);
 			}
 			System.out.println(average / episordNum);
 		}
