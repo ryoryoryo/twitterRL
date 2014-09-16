@@ -88,9 +88,9 @@ public class ClusterDataReader {
 	public static double[][] readTf(String inputFilePass, String userName) {
 		List<File> files = readTfFiles(inputFilePass, userName);
 		Set<String> wordSet = new HashSet<String>();
-		List<Map<String, Integer>> mapList = new ArrayList<Map<String, Integer>>();
+		List<Map<String, Double>> mapList = new ArrayList<Map<String, Double>>();
 		for (File file : files) {
-			Map<String, Integer> map = readTfFile(
+			Map<String, Double> map = readTfidfFile(
 					file.getPath().replace(file.getName(), ""), file.getName(),
 					"\t");
 			mapList.add(map);
@@ -100,7 +100,7 @@ public class ClusterDataReader {
 		double[][] result = new double[mapList.size()][wordList.size()];
 		for (int i = 0; i < mapList.size(); i++) {
 			for (int j = 0; j < wordList.size(); j++) {
-				Map<String, Integer> map = mapList.get(i);
+				Map<String, Double> map = mapList.get(i);
 				String word = wordList.get(j);
 				if (map.containsKey(word)) {
 					result[i][j] = map.get(word);
@@ -124,10 +124,10 @@ public class ClusterDataReader {
 	 *            1行をStringで分割する
 	 * @return ファイルの中身が入ったMap
 	 */
-	public static Map<String, Integer> readTfFile(String directory,
+	public static Map<String, Double> readTfidfFile(String directory,
 			String filename, String split) {
 		// return用
-		Map<String, Integer> Map = new HashMap<String, Integer>();
+		Map<String, Double> map = new HashMap<String, Double>();
 		try {
 			FileInputStream fis = new FileInputStream(directory + filename);
 			InputStreamReader ir = new InputStreamReader(fis, "UTF-8");
@@ -138,8 +138,8 @@ public class ClusterDataReader {
 			while ((temp = br.readLine()) != null) {
 				String[] line = temp.split(split);
 				String key = line[0];
-				int value = Integer.valueOf(line[1]);
-				Map.put(key, value);
+				double value = Double.valueOf(line[1]);
+				map.put(key, value);
 			}
 
 			fis.close();
@@ -152,7 +152,49 @@ public class ClusterDataReader {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return Map;
+		return map;
+	}
+
+	/**
+	 * ファイルを読み込み、Map(String, Double)に格納して返す
+	 *
+	 * @param directory
+	 *            ディレクトリパス
+	 * @param filename
+	 *            ファイルネーム
+	 * @param split
+	 *            1行をStringで分割する
+	 * @return ファイルの中身が入ったMap
+	 */
+	public static Map<String, Integer> readTfFile(String directory,
+			String filename, String split) {
+		// return用
+		Map<String, Integer> map = new HashMap<String, Integer>();
+		try {
+			FileInputStream fis = new FileInputStream(directory + filename);
+			InputStreamReader ir = new InputStreamReader(fis, "UTF-8");
+			BufferedReader br = new BufferedReader(ir);
+
+			String temp = "";
+			// 読み込んで格納
+			while ((temp = br.readLine()) != null) {
+				String[] line = temp.split(split);
+				String key = line[0];
+				int value = Integer.valueOf(line[1]);
+				map.put(key, value);
+			}
+
+			fis.close();
+			ir.close();
+			fis.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return map;
 	}
 
 	/**

@@ -26,7 +26,7 @@ public class XMeans {
 		KMeans kmeans = new KMeans();
 
 		double[][] rawData = ClusterDataReader
-				.readTf("R:/twitter-experiment-result/data-analysis/kingjim-2/twitter-bow/",
+				.readTf("R:/twitter-experiment-result/data-analysis/kingjim-2/twitter-bow-tfidf/",
 						"kingjim");// 入力データ
 		// double[][] rawData = ClusterDataReader.readTestRawData();
 
@@ -35,8 +35,7 @@ public class XMeans {
 
 		// 出力
 		for (int i = 0; i < clustering.length; i++) {
-			System.out.println(i + "\t" + rawData[i][0] + ":" + rawData[i][1]
-					+ "\t" + clustering[i]);
+			System.out.println(i + "\t" + clustering[i]);
 		}
 	}
 

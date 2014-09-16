@@ -18,9 +18,9 @@ public class DataUtils {
 
 	public static void main(String[] args) {
 		Map<Integer, double[]> map = readStateMap(TwitterTDLeastSquares.STATE_FILE_PASS);
-		for(int key : map.keySet()) {
+		for (int key : map.keySet()) {
 			double[] tmp = map.get(key);
-			for(int i = 0; i < tmp.length; i++) {
+			for (int i = 0; i < tmp.length; i++) {
 				System.out.println(tmp[i]);
 			}
 		}
@@ -34,6 +34,29 @@ public class DataUtils {
 	 */
 	public static Map<Integer, double[]> readStateMap(String filepass) {
 		return readDoubleFile(filepass, "\t");
+	}
+
+	/**
+	 * エピソード付状態ファイル読み込み
+	 *
+	 * @param filepass
+	 * @return
+	 */
+	public static Map<Integer, Map<Integer, double[]>> readEpisordeStateMap(
+			String filepass) {
+		Map<Integer, Map<Integer, double[]>> result = new HashMap<Integer, Map<Integer, double[]>>();
+		File dir = new File(filepass);
+		File[] files = dir.listFiles();
+		for (int i = 0; i < files.length; i++) {
+			if (!files[i].isDirectory()) {
+				String fileName = files[i].getName().replace(".txt", "");
+				Integer key = Integer.valueOf(fileName.substring(
+						fileName.length() - 1, fileName.length()));
+				Map<Integer, double[]> value = readStateMap(files[i].getPath());
+				result.put(key, value);
+			}
+		}
+		return result;
 	}
 
 	/**
@@ -57,6 +80,29 @@ public class DataUtils {
 	}
 
 	/**
+	 * エピソード付行動ファイル読み込み
+	 *
+	 * @param filepass
+	 * @return
+	 */
+	public static Map<Integer, Map<Integer, int[]>> readEpisordeActionMap(
+			String filepass) {
+		Map<Integer, Map<Integer, int[]>> result = new HashMap<Integer, Map<Integer, int[]>>();
+		File dir = new File(filepass);
+		File[] files = dir.listFiles();
+		for (int i = 0; i < files.length; i++) {
+			if (!files[i].isDirectory()) {
+				String fileName = files[i].getName().replace(".txt", "");
+				Integer key = Integer.valueOf(fileName.substring(
+						fileName.length() - 1, fileName.length()));
+				Map<Integer, int[]> value = readActionMap(files[i].getPath());
+				result.put(key, value);
+			}
+		}
+		return result;
+	}
+
+	/**
 	 * 報酬ファイル読み込み
 	 *
 	 * @param filepass
@@ -75,6 +121,40 @@ public class DataUtils {
 			tmpMap.put(time, tmpValues);
 		}
 		return tmpMap;
+	}
+
+	/**
+	 * エピソード付報酬ファイル読み込み
+	 *
+	 * @param filepass
+	 * @return
+	 */
+	public static Map<Integer, Map<Integer, double[]>> readEpisordeRewardMap(int actionNum,
+			Map<Integer, Map<Integer, int[]>> actionMap, String filepass) {
+		Map<Integer, Map<Integer, double[]>> result = new HashMap<Integer, Map<Integer, double[]>>();
+		File dir = new File(filepass);
+		File[] files = dir.listFiles();
+		for (int i = 0; i < files.length; i++) {
+			if (!files[i].isDirectory()) {
+				String fileName = files[i].getName().replace(".txt", "");
+				Integer episorde = Integer.valueOf(fileName.substring(
+						fileName.length() - 1, fileName.length()));
+				Map<Integer, double[]> tmpMap = readDoubleFile(
+						files[i].getPath(), "\t");
+				Map<Integer, int[]> tmpActionMap = actionMap.get(episorde);
+				for (int time : tmpActionMap.keySet()) {
+					int[] index = tmpActionMap.get(time);
+					double[] values = tmpMap.get(time);
+					double[] tmpValues = new double[actionNum];
+					for (int j = 0; j < values.length; j++) {
+						tmpValues[index[j]] = values[j];
+					}
+					tmpMap.put(time, tmpValues);
+				}
+				result.put(episorde, tmpMap);
+			}
+		}
+		return result;
 	}
 
 	/**
