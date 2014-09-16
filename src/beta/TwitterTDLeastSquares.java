@@ -32,7 +32,7 @@ public class TwitterTDLeastSquares {
 
 	/** 報酬ファイルパス */
 	private static final String REWARD_FILE_PASS = INPUT_DIR
-			+ "global-reward-combine.txt";
+			+ "local-reward-combine.txt";
 
 	/** 状態マップ */
 	private static Map<Integer, double[]> stateMap; // ステップ・状態
@@ -56,7 +56,7 @@ public class TwitterTDLeastSquares {
 	private static final int timeNum = 14;
 
 	/** RBF(動径基底関数)の幅 */
-	private static final double width = 0.03;
+	private static final double width = 0.04;
 
 	/** ソフトマックス関数τ */
 	private static final double tau = 1.0;
@@ -290,7 +290,7 @@ public class TwitterTDLeastSquares {
 			}
 			count++;
 		}
-		return Integer.MAX_VALUE;
+		return selectAction();
 	}
 
 	/**
@@ -308,6 +308,25 @@ public class TwitterTDLeastSquares {
 			}
 		}
 		return policy.length;
+	}
+
+	/**
+	 * 行動ランダム
+	 *
+	 * @return
+	 */
+	private static int selectAction() {
+		int maxAction = Integer.MAX_VALUE;
+		double maxValue = 0;
+
+		for (int i = 0; i < actions.length; i++) {
+			double value = policy[actions[i]];
+			if (value > maxValue) {
+				maxValue = value;
+				maxAction = actions[i];
+			}
+		}
+		return maxAction;
 	}
 
 	/**
