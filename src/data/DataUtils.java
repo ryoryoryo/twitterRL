@@ -49,9 +49,8 @@ public class DataUtils {
 		File[] files = dir.listFiles();
 		for (int i = 0; i < files.length; i++) {
 			if (!files[i].isDirectory()) {
-				String fileName = files[i].getName().replace(".txt", "");
-				Integer key = Integer.valueOf(fileName.substring(
-						fileName.length() - 1, fileName.length()));
+				String[] fileName = files[i].getName().replace(".txt", "").split("-");
+				Integer key = Integer.valueOf(fileName[fileName.length - 1]);
 				Map<Integer, double[]> value = readStateMap(files[i].getPath());
 				result.put(key, value);
 			}
@@ -92,9 +91,8 @@ public class DataUtils {
 		File[] files = dir.listFiles();
 		for (int i = 0; i < files.length; i++) {
 			if (!files[i].isDirectory()) {
-				String fileName = files[i].getName().replace(".txt", "");
-				Integer key = Integer.valueOf(fileName.substring(
-						fileName.length() - 1, fileName.length()));
+				String[] fileName = files[i].getName().replace(".txt", "").split("-");
+				Integer key = Integer.valueOf(fileName[fileName.length - 1]);
 				Map<Integer, int[]> value = readActionMap(files[i].getPath());
 				result.put(key, value);
 			}
@@ -136,22 +134,21 @@ public class DataUtils {
 		File[] files = dir.listFiles();
 		for (int i = 0; i < files.length; i++) {
 			if (!files[i].isDirectory()) {
-				String fileName = files[i].getName().replace(".txt", "");
-				Integer episorde = Integer.valueOf(fileName.substring(
-						fileName.length() - 1, fileName.length()));
-				Map<Integer, double[]> tmpMap = readDoubleFile(
+				String[] fileName = files[i].getName().replace(".txt", "").split("-");
+				Integer episorde = Integer.valueOf(fileName[fileName.length - 1]);
+				Map<Integer, double[]> tmpRewardMap = readDoubleFile(
 						files[i].getPath(), "\t");
 				Map<Integer, int[]> tmpActionMap = actionMap.get(episorde);
 				for (int time : tmpActionMap.keySet()) {
 					int[] index = tmpActionMap.get(time);
-					double[] values = tmpMap.get(time);
+					double[] values = tmpRewardMap.get(time);
 					double[] tmpValues = new double[actionNum];
 					for (int j = 0; j < values.length; j++) {
 						tmpValues[index[j]] = values[j];
 					}
-					tmpMap.put(time, tmpValues);
+					tmpRewardMap.put(time, tmpValues);
 				}
-				result.put(episorde, tmpMap);
+				result.put(episorde, tmpRewardMap);
 			}
 		}
 		return result;
