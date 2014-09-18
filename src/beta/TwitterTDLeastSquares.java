@@ -1,7 +1,13 @@
 package beta;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.Map;
 import java.util.Random;
@@ -25,22 +31,22 @@ public class TwitterTDLeastSquares {
 
 	private static final String MID_DIR = "R:/twitter-experiment-result/verβ/ver2/output/result1/";
 
-	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/output/result1/";
+	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/output/result2-random/";
 
 	/** 状態ファイルパス */
 	public static final String STATE_FILE_PASS = INPUT_DIR
-			+ "combine-state-12.txt";
+			+ "combine-state-13.txt";
 
 	/** 中心点ファイルパス */
 	private static final String CENTERS_FILE_PASS = INPUT_DIR + "centers.txt";
 
 	/** 行動ファイルパス */
 	private static final String ACTIONS_FILE_PASS = INPUT_DIR
-			+ "action-realtime-12.txt";
+			+ "action-realtime-13.txt";
 
 	/** 報酬ファイルパス */
 	private static final String REWARD_FILE_PASS = INPUT_DIR
-			+ "local-reward-realtime-12.txt";
+			+ "local-reward-realtime-13.txt";
 
 	/** 状態マップ */
 	private static Map<Integer, double[]> stateMap; // ステップ・状態
@@ -55,7 +61,7 @@ public class TwitterTDLeastSquares {
 	private static Map<Integer, double[]> rewardMap; // ステップ・報酬
 
 	/** 反復回数 */
-	private static final int iterationNum = 10;
+	private static final int iterationNum = 1;
 
 	/** エピソード回数 */
 	private static final int episordNum = 1;
@@ -126,6 +132,8 @@ public class TwitterTDLeastSquares {
 		theta = new double[centers.length][actionNum];
 		x = new double[episordNum][timeNum - 1][centers.length][actionNum];
 		r = new double[episordNum][timeNum - 1];
+//		inputPolicy();
+//		inputTheta();
 	}
 
 	/**
@@ -138,8 +146,8 @@ public class TwitterTDLeastSquares {
 		for (int time : actionMap.keySet()) {
 			if (actionMap.get(time).length > max) {
 				int[] value = actionMap.get(time);
-				for(int i = 0; i < value.length; i++) {
-					if(max < value[i]) {
+				for (int i = 0; i < value.length; i++) {
+					if (max < value[i]) {
 						max = value[i];
 					}
 				}
@@ -578,6 +586,54 @@ public class TwitterTDLeastSquares {
 			osw.close();
 			fos.close();
 		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * policy入力
+	 */
+	private static void inputPolicy() {
+		try {
+			File file = new File(MID_DIR + "policy.txt");
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					new FileInputStream(file), "UTF-8"));
+			String line = "";
+			while ((line = br.readLine()) != null) {
+				String[] value = line.split("\t");
+				for (int i = 0; i < value.length; i++) {
+					policy[i] = Double.valueOf(value[i]);
+				}
+			}
+			br.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * theta入力
+	 */
+	private static void inputTheta() {
+		try {
+			File file = new File(MID_DIR + "theta.txt");
+			BufferedReader br = new BufferedReader(new InputStreamReader(
+					new FileInputStream(file), "UTF-8"));
+			String line = "";
+			int index = 0;
+			while ((line = br.readLine()) != null) {
+				String[] value = line.split("\t");
+				for (int i = 0; i < value.length; i++) {
+					theta[index][i] = Double.valueOf(value[i]);
+				}
+				index++;
+			}
+			br.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
