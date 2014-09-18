@@ -13,14 +13,17 @@ import org.apache.commons.math3.linear.SingularValueDecomposition;
 import data.DataUtils;
 
 /**
- * TD２乗誤差(近似：最少２乗法)
+ * TD２乗誤差(近似：最少２乗法)<br>
+ * θ、政策を読み込んで実行
  *
  * @author miyagi
  *
  */
 public class TwitterTDLeastSquares {
 
-	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/input-learning/";
+	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/input-test/";
+
+	private static final String MID_DIR = "R:/twitter-experiment-result/verβ/ver2/output/result1/";
 
 	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/output/result1/";
 
@@ -55,7 +58,7 @@ public class TwitterTDLeastSquares {
 	private static final int iterationNum = 10;
 
 	/** エピソード回数 */
-	private static final int episordNum = 1000;
+	private static final int episordNum = 1;
 
 	/** ステップ数 */
 	private static final int timeNum = 14;
