@@ -20,24 +20,24 @@ import data.DataUtils;
  */
 public class TwitterTDLeastSquares {
 
-	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver1/input2/";
+	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/input-learning/";
 
-	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver1/input2/";
+	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/output/result1/";
 
 	/** 状態ファイルパス */
 	public static final String STATE_FILE_PASS = INPUT_DIR
-			+ "state-combine-5.txt";
+			+ "combine-state-12.txt";
 
 	/** 中心点ファイルパス */
 	private static final String CENTERS_FILE_PASS = INPUT_DIR + "centers.txt";
 
 	/** 行動ファイルパス */
 	private static final String ACTIONS_FILE_PASS = INPUT_DIR
-			+ "action-combine.txt";
+			+ "action-realtime-12.txt";
 
 	/** 報酬ファイルパス */
 	private static final String REWARD_FILE_PASS = INPUT_DIR
-			+ "local-reward-combine.txt";
+			+ "local-reward-realtime-12.txt";
 
 	/** 状態マップ */
 	private static Map<Integer, double[]> stateMap; // ステップ・状態
@@ -134,10 +134,15 @@ public class TwitterTDLeastSquares {
 		int max = 0;
 		for (int time : actionMap.keySet()) {
 			if (actionMap.get(time).length > max) {
-				max = actionMap.get(time).length;
+				int[] value = actionMap.get(time);
+				for(int i = 0; i < value.length; i++) {
+					if(max < value[i]) {
+						max = value[i];
+					}
+				}
 			}
 		}
-		return max;
+		return max + 1;
 	}
 
 	/**
@@ -297,7 +302,7 @@ public class TwitterTDLeastSquares {
 			}
 			count++;
 		}
-		return selectAction();
+		return selectLastAction();
 	}
 
 	/**
@@ -322,7 +327,7 @@ public class TwitterTDLeastSquares {
 	 *
 	 * @return
 	 */
-	private static int selectAction() {
+	private static int selectLastAction() {
 		int maxAction = Integer.MAX_VALUE;
 		double maxValue = 0;
 
@@ -544,7 +549,7 @@ public class TwitterTDLeastSquares {
 			for (int j = 0; j < theta[i].length - 1; j++) {
 				result.append(theta[i][j]).append("\t");
 			}
-			result.append(theta[i][theta[i].length - 1]);
+			result.append(theta[i][theta[i].length - 1]).append("\n");
 		}
 		stringOutputString(result.toString(), OUTPUT_DIR, "theta.txt", "UTF-8");
 	}
