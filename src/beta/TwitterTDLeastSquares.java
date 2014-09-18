@@ -1,5 +1,8 @@
 package beta;
 
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 import java.util.Map;
 import java.util.Random;
 
@@ -18,6 +21,8 @@ import data.DataUtils;
 public class TwitterTDLeastSquares {
 
 	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver1/input2/";
+
+	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver1/input2/";
 
 	/** 状態ファイルパス */
 	public static final String STATE_FILE_PASS = INPUT_DIR
@@ -99,6 +104,8 @@ public class TwitterTDLeastSquares {
 		init();
 		double[][] results = iteration();
 		output(results);
+		outputPolicy();
+		outputTheta();
 	}
 
 	/**
@@ -503,6 +510,7 @@ public class TwitterTDLeastSquares {
 	 * @param results
 	 */
 	private static void output(double[][] results) {
+		StringBuffer result = new StringBuffer();
 		for (int i = 0; i < results.length; i++) {
 			double average = 0;
 			for (int j = 0; j < results[i].length; j++) {
@@ -510,6 +518,59 @@ public class TwitterTDLeastSquares {
 				// System.out.println(i + ":" + j + "\t" + results[i][j]);
 			}
 			System.out.println(average / episordNum);
+			result.append(average / episordNum).append("\n");
+		}
+		stringOutputString(result.toString(), OUTPUT_DIR, "result.txt", "UTF-8");
+	}
+
+	/**
+	 * 政策出力
+	 */
+	private static void outputPolicy() {
+		StringBuffer result = new StringBuffer();
+		for (int i = 0; i < policy.length - 1; i++) {
+			result.append(policy[i]).append("\t");
+		}
+		result.append(policy[policy.length - 1]);
+		stringOutputString(result.toString(), OUTPUT_DIR, "policy.txt", "UTF-8");
+	}
+
+	/**
+	 * θ出力
+	 */
+	private static void outputTheta() {
+		StringBuffer result = new StringBuffer();
+		for (int i = 0; i < theta.length; i++) {
+			for (int j = 0; j < theta[i].length - 1; j++) {
+				result.append(theta[i][j]).append("\t");
+			}
+			result.append(theta[i][theta[i].length - 1]);
+		}
+		stringOutputString(result.toString(), OUTPUT_DIR, "theta.txt", "UTF-8");
+	}
+
+	/**
+	 * Stringを出力するメソッド
+	 *
+	 * @param content
+	 * @param directory
+	 * @param filename
+	 * @param character
+	 */
+	private static void stringOutputString(String content, String directory,
+			String filename, String character) {
+		try {
+			FileOutputStream fos = new FileOutputStream(directory + filename);
+			OutputStreamWriter osw = new OutputStreamWriter(fos, character);
+			BufferedWriter bw = new BufferedWriter(osw);
+
+			bw.write(content);
+
+			bw.close();
+			osw.close();
+			fos.close();
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 }
