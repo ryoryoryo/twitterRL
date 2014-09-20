@@ -20,24 +20,24 @@ import data.DataUtils;
  */
 public class TwitterTDLeastSquares {
 
-	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/input-learning/";
+	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver3/input/";
 
-	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/output/result1/";
+	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver3/output/";
 
 	/** 状態ファイルパス */
 	public static final String STATE_FILE_PASS = INPUT_DIR
-			+ "combine-state-12.txt";
+			+ "state-js.txt";
 
 	/** 中心点ファイルパス */
 	private static final String CENTERS_FILE_PASS = INPUT_DIR + "centers.txt";
 
 	/** 行動ファイルパス */
 	private static final String ACTIONS_FILE_PASS = INPUT_DIR
-			+ "action-realtime-12.txt";
+			+ "action-combine.txt";
 
 	/** 報酬ファイルパス */
 	private static final String REWARD_FILE_PASS = INPUT_DIR
-			+ "local-reward-realtime-12.txt";
+			+ "local-reward-combine.txt";
 
 	/** 状態マップ */
 	private static Map<Integer, double[]> stateMap; // ステップ・状態
@@ -61,7 +61,7 @@ public class TwitterTDLeastSquares {
 	private static final int timeNum = 14;
 
 	/** RBF(動径基底関数)の幅 */
-	private static final double width = 0.04;
+	private static final double width = 0.00006;
 
 	/** ソフトマックス関数τ */
 	private static final double tau = 1.0;
