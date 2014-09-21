@@ -17,7 +17,7 @@ import data.DataUtils;
  */
 public class TwitterTDLeastSquares {
 
-	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver1/input-realtime";
+	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver5/input";
 
 	/** 状態ファイルパス */
 	public static final String STATE_FILE_PASS = INPUT_DIR + "/state/";
@@ -29,20 +29,19 @@ public class TwitterTDLeastSquares {
 	private static final String ACTIONS_FILE_PASS = INPUT_DIR + "/action/";
 
 	/** 報酬ファイルパス */
-	private static final String REWARD_FILE_PASS = INPUT_DIR
-			+ "/global-reward/";
+	private static final String REWARD_FILE_PASS = INPUT_DIR + "/local-reward/";
 
 	/** 状態マップ */
-	private static Map<Integer, Map<Integer, double[]>> stateMap; // エピソード・ステップ・状態
+	private static Map<Integer, double[]> stateMap; // エピソード・ステップ・状態
 
 	/** 中心点マップ */
 	private static double[] center; // 中心点
 
 	/** 行動マップ */
-	private static Map<Integer, Map<Integer, int[]>> actionMap; // エピソード・ステップ・クラスタ
+	private static Map<Integer, int[]> actionMap; // エピソード・ステップ・クラスタ
 
 	/** 報酬マップ */
-	private static Map<Integer, Map<Integer, double[]>> rewardMap; // エピソード・ステップ・報酬
+	private static Map<Integer, double[]> rewardMap; // エピソード・ステップ・報酬
 
 	/** 反復回数 */
 	private static final int iterationNum = 10;
@@ -51,10 +50,10 @@ public class TwitterTDLeastSquares {
 	private static final int episordNum = 3;
 
 	/** ステップ数 */
-	private static final int timeNum = 14;
+	private static final int timeNum = 140;
 
 	/** RBF(動径基底関数)の幅 */
-	private static final double width = 0.03;
+	private static final double width = 0.04;
 
 	/** ソフトマックス関数τ */
 	private static final double tau = 1.0;
@@ -123,22 +122,22 @@ public class TwitterTDLeastSquares {
 	 */
 	private static int initActionNum() {
 		int max = 0;
-		for (int episorde : actionMap.keySet()) {
-			Map<Integer, int[]> tmpMap = actionMap.get(episorde);
-			for (int time : tmpMap.keySet()) {
-				int[] tmp = tmpMap.get(time);
-				if (max < tmp.length) {
-					max = tmp.length;
+		for (int time : actionMap.keySet()) {
+			int[] tmp = actionMap.get(time);
+			for (int j = 0; j < tmp.length; j++) {
+				if (max < tmp[j]) {
+					max = tmp[j];
 				}
 			}
 		}
-		return max;
+		return max + 1;
 	}
 
 	/**
 	 * 反復
 	 */
 	private static double[][] iteration() {
+		boolean firstFlag = true;
 		double[][] results = new double[iterationNum][episordNum]; // 結果
 		for (int l = 0; l < iterationNum; l++) {
 			System.out.println("iteration:" + l);
@@ -146,14 +145,15 @@ public class TwitterTDLeastSquares {
 				double rewardSum = 0;
 				for (int t = 0; t < timeNum; t++) {
 					int time = FIRST_TIME + t;
-					double[] state = readState(e, time); // 状態観測
+					double[] state = readState(time); // 状態観測
 					double[] q = getQ(state); // 現在状態価値 actionL
 					updatePolicy(q); // 政策改善 actionL
 					int action = selectAction(e, time, policy); // 行動選択
 					if (action != Integer.MAX_VALUE) {
 						double reward = doAction(e, time, action); // 行動実行
 						rewardSum += reward;
-						if (t > 0) {
+						if (!firstFlag && t > 0) {
+							firstFlag = false;
 							updateX(e, t, state, action);
 							updateR(e, t, reward);
 						}
@@ -173,9 +173,8 @@ public class TwitterTDLeastSquares {
 	 *
 	 * @return
 	 */
-	private static double[] readState(int episorde, int time) {
-		Map<Integer, double[]> timeMap = stateMap.get(episorde);
-		return timeMap.get(time);
+	private static double[] readState(int time) {
+		return stateMap.get(time);
 	}
 
 	/**
@@ -185,8 +184,7 @@ public class TwitterTDLeastSquares {
 	 */
 	private static void setCenters() {
 		center = DataUtils.readCenter(CENTERS_FILE_PASS); // 中心点
-		Map<Integer, double[]> tmpMap = stateMap.get(0);
-		int stateLength = tmpMap.get(FIRST_TIME).length;
+		int stateLength = stateMap.get(FIRST_TIME).length;
 		int b = 1;
 		for (int i = 0; i < stateLength; i++) {
 			b *= center.length;
@@ -279,8 +277,7 @@ public class TwitterTDLeastSquares {
 	 * @return
 	 */
 	private static int selectAction(int episorde, int time, double[] policy) {
-		Map<Integer, int[]> tmpActionMap = actionMap.get(episorde);
-		actions = tmpActionMap.get(time);
+		actions = actionMap.get(time);
 		int a = 0;
 		int count = 0;
 		while (count < 10) {
@@ -318,8 +315,7 @@ public class TwitterTDLeastSquares {
 	 * @return
 	 */
 	private static double doAction(int episorde, int time, int action) {
-		Map<Integer, double[]> tmpMap = rewardMap.get(episorde);
-		double[] rewards = tmpMap.get(time);
+		double[] rewards = rewardMap.get(time);
 		return rewards[action];
 	}
 

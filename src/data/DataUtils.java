@@ -42,17 +42,20 @@ public class DataUtils {
 	 * @param filepass
 	 * @return
 	 */
-	public static Map<Integer, Map<Integer, double[]>> readEpisordeStateMap(
-			String filepass) {
-		Map<Integer, Map<Integer, double[]>> result = new HashMap<Integer, Map<Integer, double[]>>();
+	public static Map<Integer, double[]> readEpisordeStateMap(String filepass) {
+		Map<Integer, double[]> result = new HashMap<Integer, double[]>();
 		File dir = new File(filepass);
 		File[] files = dir.listFiles();
 		for (int i = 0; i < files.length; i++) {
 			if (!files[i].isDirectory()) {
-				String[] fileName = files[i].getName().replace(".txt", "").split("-");
-				Integer key = Integer.valueOf(fileName[fileName.length - 1]);
-				Map<Integer, double[]> value = readStateMap(files[i].getPath());
-				result.put(key, value);
+				String[] fileName = files[i].getName().replace(".txt", "")
+						.split("-");
+				// Integer num = Integer.valueOf(fileName[fileName.length - 1]);
+				Map<Integer, double[]> map = readStateMap(files[i].getPath());
+				int num = map.size();
+				for (int key : map.keySet()) {
+					result.put(num * i + key, map.get(key));
+				}
 			}
 		}
 		return result;
@@ -84,17 +87,20 @@ public class DataUtils {
 	 * @param filepass
 	 * @return
 	 */
-	public static Map<Integer, Map<Integer, int[]>> readEpisordeActionMap(
-			String filepass) {
-		Map<Integer, Map<Integer, int[]>> result = new HashMap<Integer, Map<Integer, int[]>>();
+	public static Map<Integer, int[]> readEpisordeActionMap(String filepass) {
+		Map<Integer, int[]> result = new HashMap<Integer, int[]>();
 		File dir = new File(filepass);
 		File[] files = dir.listFiles();
 		for (int i = 0; i < files.length; i++) {
 			if (!files[i].isDirectory()) {
-				String[] fileName = files[i].getName().replace(".txt", "").split("-");
-				Integer key = Integer.valueOf(fileName[fileName.length - 1]);
-				Map<Integer, int[]> value = readActionMap(files[i].getPath());
-				result.put(key, value);
+				String[] fileName = files[i].getName().replace(".txt", "")
+						.split("-");
+				// Integer num = Integer.valueOf(fileName[fileName.length - 1]);
+				Map<Integer, int[]> map = readActionMap(files[i].getPath());
+				int num = map.size();
+				for (int key : map.keySet()) {
+					result.put(key + num * i, map.get(key));
+				}
 			}
 		}
 		return result;
@@ -127,28 +133,28 @@ public class DataUtils {
 	 * @param filepass
 	 * @return
 	 */
-	public static Map<Integer, Map<Integer, double[]>> readEpisordeRewardMap(int actionNum,
-			Map<Integer, Map<Integer, int[]>> actionMap, String filepass) {
-		Map<Integer, Map<Integer, double[]>> result = new HashMap<Integer, Map<Integer, double[]>>();
+	public static Map<Integer, double[]> readEpisordeRewardMap(int actionNum,
+			Map<Integer, int[]> actionMap, String filepass) {
+		Map<Integer, double[]> result = new HashMap<Integer, double[]>();
 		File dir = new File(filepass);
 		File[] files = dir.listFiles();
 		for (int i = 0; i < files.length; i++) {
 			if (!files[i].isDirectory()) {
-				String[] fileName = files[i].getName().replace(".txt", "").split("-");
-				Integer episorde = Integer.valueOf(fileName[fileName.length - 1]);
+				String[] fileName = files[i].getName().replace(".txt", "")
+						.split("-");
+				Integer episorde = Integer
+						.valueOf(fileName[fileName.length - 1]);
 				Map<Integer, double[]> tmpRewardMap = readDoubleFile(
 						files[i].getPath(), "\t");
-				Map<Integer, int[]> tmpActionMap = actionMap.get(episorde);
-				for (int time : tmpActionMap.keySet()) {
-					int[] index = tmpActionMap.get(time);
+				for (int time : tmpRewardMap.keySet()) {
+					int[] index = actionMap.get(time + i * tmpRewardMap.size());
 					double[] values = tmpRewardMap.get(time);
 					double[] tmpValues = new double[actionNum];
 					for (int j = 0; j < values.length; j++) {
 						tmpValues[index[j]] = values[j];
 					}
-					tmpRewardMap.put(time, tmpValues);
+					result.put(tmpRewardMap.size() * i + time, tmpValues);
 				}
-				result.put(episorde, tmpRewardMap);
 			}
 		}
 		return result;
