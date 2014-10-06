@@ -20,24 +20,26 @@ import data.DataUtils;
  */
 public class TwitterTDLeastSquares {
 
-	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/input-learning/";
+	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver0/input/";
 
-	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver2/output/result1/";
+	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver0/output3/";
+
+	private static final String OUTPUT_PARAM_DIR = OUTPUT_DIR + "parameter/";
 
 	/** 状態ファイルパス */
 	public static final String STATE_FILE_PASS = INPUT_DIR
-			+ "combine-state-12.txt";
+			+ "state-combine-5-2.txt";
 
 	/** 中心点ファイルパス */
 	private static final String CENTERS_FILE_PASS = INPUT_DIR + "centers.txt";
 
 	/** 行動ファイルパス */
 	private static final String ACTIONS_FILE_PASS = INPUT_DIR
-			+ "action-realtime-12.txt";
+			+ "action-combine.txt";
 
 	/** 報酬ファイルパス */
 	private static final String REWARD_FILE_PASS = INPUT_DIR
-			+ "local-reward-realtime-12.txt";
+			+ "local-reward-combine3.txt";
 
 	/** 状態マップ */
 	private static Map<Integer, double[]> stateMap; // ステップ・状態
@@ -61,13 +63,13 @@ public class TwitterTDLeastSquares {
 	private static final int timeNum = 14;
 
 	/** RBF(動径基底関数)の幅 */
-	private static final double width = 0.04;
+	private static double width = 0.4;
 
 	/** ソフトマックス関数τ */
-	private static final double tau = 1.0;
+	private static final double tau = 0.1;
 
 	/** 割引率γ */
-	private static final double gamma = 0.95;
+	private static final double gamma = 0.9;
 
 	/** 行動 */
 	private static int[] actions;
@@ -101,11 +103,10 @@ public class TwitterTDLeastSquares {
 	private static int actionNum = 0;
 
 	public static void main(String[] args) {
+		System.out.println(width);
 		init();
 		double[][] results = iteration();
-		output(results);
-		outputPolicy();
-		outputTheta();
+		output(results, "result-w" + width);
 	}
 
 	/**
@@ -135,8 +136,8 @@ public class TwitterTDLeastSquares {
 		for (int time : actionMap.keySet()) {
 			if (actionMap.get(time).length > max) {
 				int[] value = actionMap.get(time);
-				for(int i = 0; i < value.length; i++) {
-					if(max < value[i]) {
+				for (int i = 0; i < value.length; i++) {
+					if (max < value[i]) {
 						max = value[i];
 					}
 				}
@@ -149,20 +150,20 @@ public class TwitterTDLeastSquares {
 	 * 反復
 	 */
 	private static double[][] iteration() {
+		StringBuffer outputAction = new StringBuffer();
 		double[][] results = new double[iterationNum][episordNum]; // 結果
 		for (int l = 0; l < iterationNum; l++) {
 			System.out.println("iteration:" + l);
-			if (l == 1) {
-				System.out.println("stop");
-			}
+			outputAction.append(l);
 			for (int e = 0; e < episordNum; e++) {
 				double rewardSum = 0;
 				for (int t = 0; t < timeNum; t++) {
 					int time = FIRST_TIME + t;
 					double state[] = readState(time); // 状態観測
-					double[] q = getQ(state); // 現在状態価値 actionL
-					updatePolicy(q); // 政策改善 actionL
+					double[] q = getQ(state); // 現在状態価値 actionNum
+					updatePolicy2(q); // 政策改善 actionL
 					int action = selectAction(time, policy); // 行動選択
+					outputAction.append("\t").append(action);
 					if (action != Integer.MAX_VALUE) {
 						double reward = doAction(time, action); // 行動実行
 						rewardSum += reward;
@@ -176,7 +177,21 @@ public class TwitterTDLeastSquares {
 				}
 				results[l][e] = rewardSum;
 			}
+			outputAction.append("\n");
+			outputXR(l);
 			evaluatePolicy();// 政策評価
+			// outputPolicy(l);
+			outputTheta(l);
+			stringOutputString(outputAction.toString(), OUTPUT_PARAM_DIR,
+					"action-" + l + ".txt", "UTF-8");
+			double avgReward = 0.0;
+			for (int i = 0; i < episordNum; i++) {
+				avgReward += results[l][i];
+			}
+			avgReward = avgReward / episordNum;
+			if (avgReward > 80) {
+				System.out.println();
+			}
 		}
 		return results;
 	}
@@ -214,6 +229,7 @@ public class TwitterTDLeastSquares {
 				centers[i][j] = center[index[j]];
 			}
 		}
+		outputCenters();
 	}
 
 	/**
@@ -255,6 +271,7 @@ public class TwitterTDLeastSquares {
 	 */
 	private static double[] getQ(double[] state) {
 		double[] phis = getCurrentPhis(state); // RBF B
+		outputPhi(phis);
 		double[] q = new double[actionNum];
 		for (int i = 0; i < q.length; i++) {
 			for (int j = 0; j < phis.length; j++) {
@@ -262,6 +279,30 @@ public class TwitterTDLeastSquares {
 			}
 		}
 		return q;
+	}
+
+	/**
+	 * max policy actionL
+	 *
+	 * @return
+	 */
+	private static double[] updatePolicy2(double[] q) {
+		int maxQIndex = 0;
+		double maxQ = 0.0;
+		for (int i = 0; i < q.length; i++) {
+			if (maxQ < q[i]) {
+				maxQIndex = i;
+				maxQ = q[i];
+			}
+		}
+		for (int i = 0; i < q.length; i++) {
+			if (i == maxQIndex) {
+				policy[i] = 1;
+			} else {
+				policy[i] = 0;
+			}
+		}
+		return policy;
 	}
 
 	/**
@@ -338,7 +379,7 @@ public class TwitterTDLeastSquares {
 				maxAction = actions[i];
 			}
 		}
-		return maxAction;
+		return random.nextInt(policy.length);
 	}
 
 	/**
@@ -480,13 +521,13 @@ public class TwitterTDLeastSquares {
 	 * @return
 	 */
 	private static double[][] convertX() {
-		double[][] result = new double[episordNum * timeNum][centers.length
+		double[][] result = new double[episordNum * (timeNum - 1)][centers.length
 				* actionNum];
 		for (int e = 0; e < x.length; e++) {
 			for (int t = 0; t < x[e].length; t++) {
 				for (int c = 0; c < x[e][t].length; c++) {
 					for (int a = 0; a < x[e][t][c].length; a++) {
-						result[e * timeNum + t][c * actionNum + a] = x[e][t][c][a];
+						result[e * (timeNum - 1) + t][c * actionNum + a] = x[e][t][c][a];
 					}
 				}
 			}
@@ -500,10 +541,10 @@ public class TwitterTDLeastSquares {
 	 * @return
 	 */
 	private static double[][] convertR() {
-		double[][] result = new double[episordNum * timeNum][1];
+		double[][] result = new double[episordNum * (timeNum - 1)][1];
 		for (int e = 0; e < r.length; e++) {
 			for (int t = 0; t < r[e].length; t++) {
-				result[e * timeNum + t][0] = r[e][t];
+				result[e * (timeNum - 1) + t][0] = r[e][t];
 			}
 		}
 		return result;
@@ -514,7 +555,7 @@ public class TwitterTDLeastSquares {
 	 *
 	 * @param results
 	 */
-	private static void output(double[][] results) {
+	private static void output(double[][] results, String fileName) {
 		StringBuffer result = new StringBuffer();
 		for (int i = 0; i < results.length; i++) {
 			double average = 0;
@@ -525,25 +566,61 @@ public class TwitterTDLeastSquares {
 			System.out.println(average / episordNum);
 			result.append(average / episordNum).append("\n");
 		}
-		stringOutputString(result.toString(), OUTPUT_DIR, "result.txt", "UTF-8");
+		stringOutputString(result.toString(), OUTPUT_DIR, fileName + ".txt",
+				"UTF-8");
 	}
 
 	/**
 	 * 政策出力
 	 */
-	private static void outputPolicy() {
+	private static void outputPolicy(int l) {
 		StringBuffer result = new StringBuffer();
 		for (int i = 0; i < policy.length - 1; i++) {
 			result.append(policy[i]).append("\t");
 		}
 		result.append(policy[policy.length - 1]);
-		stringOutputString(result.toString(), OUTPUT_DIR, "policy.txt", "UTF-8");
+		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "policy-" + l
+				+ ".txt", "UTF-8");
+	}
+
+	private static void outputXR(int l) {
+		double[][] tmpX = convertX();
+		StringBuffer resultX = new StringBuffer();
+		for (int i = 0; i < tmpX.length; i++) {
+			for (int j = 0; j < tmpX[i].length; j++) {
+				resultX.append("\t").append(tmpX[i][j]);
+			}
+			resultX.append("\n");
+		}
+		stringOutputString(resultX.toString(), OUTPUT_PARAM_DIR, "x-" + l
+				+ ".txt", "UTF-8");
+
+		double[][] tmpR = convertR();
+		StringBuffer resultR = new StringBuffer();
+		for (int i = 0; i < tmpR.length; i++) {
+			for (int j = 0; j < tmpR[i].length; j++) {
+				resultR.append("\t").append(tmpR[i][j]);
+			}
+			resultR.append("\n");
+		}
+		stringOutputString(resultR.toString(), OUTPUT_PARAM_DIR, "r-" + l
+				+ ".txt", "UTF-8");
+	}
+
+	private static void outputQ(int l) {
+		StringBuffer result = new StringBuffer();
+		for (int i = 0; i < policy.length - 1; i++) {
+			result.append(policy[i]).append("\t");
+		}
+		result.append(policy[policy.length - 1]);
+		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "q-" + l
+				+ ".txt", "UTF-8");
 	}
 
 	/**
 	 * θ出力
 	 */
-	private static void outputTheta() {
+	private static void outputTheta(int l) {
 		StringBuffer result = new StringBuffer();
 		for (int i = 0; i < theta.length; i++) {
 			for (int j = 0; j < theta[i].length - 1; j++) {
@@ -551,7 +628,32 @@ public class TwitterTDLeastSquares {
 			}
 			result.append(theta[i][theta[i].length - 1]).append("\n");
 		}
-		stringOutputString(result.toString(), OUTPUT_DIR, "theta.txt", "UTF-8");
+		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "theta-" + l
+				+ ".txt", "UTF-8");
+	}
+
+	/**
+	 * phi出力
+	 */
+	private static void outputPhi(double[] phi) {
+		StringBuffer result = new StringBuffer();
+		for (int i = 0; i < phi.length; i++) {
+			result.append(phi[i]).append("\n");
+		}
+		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "phi.txt",
+				"UTF-8");
+	}
+
+	private static void outputCenters() {
+		StringBuffer result = new StringBuffer();
+		for (int i = 0; i < centers.length; i++) {
+			for (int j = 0; j < centers[i].length - 1; j++) {
+				result.append(centers[i][j]).append("\t");
+			}
+			result.append(centers[i][centers[i].length - 1]).append("\n");
+		}
+		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "centers.txt",
+				"UTF-8");
 	}
 
 	/**
