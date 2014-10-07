@@ -22,16 +22,13 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 
 	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver0/input/";
 
-	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver0/output3/";
+	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver0/output-k0/";
 
 	private static final String OUTPUT_PARAM_DIR = OUTPUT_DIR + "parameter/";
 
 	/** 状態ファイルパス */
 	public static final String STATE_FILE_PASS = INPUT_DIR
 			+ "state-combine-5-2.txt";
-
-	/** 中心点ファイルパス */
-	private static final String CENTERS_FILE_PASS = INPUT_DIR + "centers.txt";
 
 	/** 行動ファイルパス */
 	private static final String ACTIONS_FILE_PASS = INPUT_DIR
@@ -54,10 +51,10 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	private static Map<Integer, double[]> rewardMap; // ステップ・報酬
 
 	/** 反復回数 */
-	private static final int iterationNum = 10;
+	private static final int iterationNum = 5;
 
 	/** エピソード回数 */
-	private static final int episordNum = 1000;
+	private static final int episordNum = 100;
 
 	/** ステップ数 */
 	private static final int timeNum = 14;
@@ -78,22 +75,16 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	private static double[][] theta; // episordNum*timeNum
 
 	/** 行列X */
-	private static double[][][][] k; // episordNum*timeNum* episordNum*timeNum
+	private static double[][] k; // episordNum*timeNum* episordNum*timeNum
 
 	/** 行列data */
-	private static double[][][] data; // episordNum*timeNum* (5+1=状態次元＋行動次元)
+	private static double[][] data; // episordNum*timeNum* (5+1=状態次元＋行動次元)
 
 	/** 行列data */
-	private static double[][][] pdata; // episordNum*timeNum* (5+1=状態次元＋行動次元)
+	private static double[][] pdata; // episordNum*timeNum* (5+1=状態次元＋行動次元)
 
 	/** 行列r */
 	private static double[][] r; // episordNum*timeNum
-
-	/** 前ステップ行動 */
-	private static int paction;
-
-	/** 前ステップ状態 */
-	private static double[] pstate;
 
 	/** ランダム */
 	private static Random random;
@@ -122,17 +113,17 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 		rewardMap = DataUtils.readRewardMap(actionNum, actionMap,
 				REWARD_FILE_PASS); // ステップ・報酬
 		setTheta();
-		k = new double[episordNum][timeNum - 1][episordNum][timeNum - 1];
-		r = new double[episordNum][timeNum - 1];
-		data = new double[episordNum][timeNum - 1][actionStateDimention];
-		pdata = new double[episordNum][timeNum - 1][actionStateDimention];
+		k = new double[episordNum * (timeNum)][episordNum * (timeNum)];
+		r = new double[episordNum * (timeNum)][1];
+		data = new double[episordNum * (timeNum)][actionStateDimention];
+		pdata = new double[episordNum * (timeNum)][actionStateDimention];
 	}
 
 	private static void setTheta() {
-		theta = new double[episordNum][timeNum - 1];
+		theta = new double[episordNum * (timeNum)][1];
 		for (int i = 0; i < episordNum; i++) {
-			for (int j = 0; j < timeNum - 1; j++) {
-				theta[i][j] = random.nextDouble();
+			for (int j = 0; j < timeNum; j++) {
+				theta[i * (timeNum) + j][0] = random.nextDouble();
 			}
 		}
 	}
@@ -161,11 +152,10 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 * 反復
 	 */
 	private static double[][] iteration() {
-		StringBuffer outputAction = new StringBuffer();
 		double[][] results = new double[iterationNum][episordNum]; // 結果
 		for (int l = 0; l < iterationNum; l++) {
 			System.out.println("iteration:" + l);
-			outputAction.append(l);
+			// outputPolicy(l);
 			for (int e = 0; e < episordNum; e++) {
 				double rewardSum = 0;
 				for (int t = 0; t < timeNum; t++) {
@@ -178,38 +168,18 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 							policy[i] = 1.0 / actionNum;
 						}
 					} else {
-						policy = updatePolicy2(q); // 政策改善 actionL
+						policy = updatePolicy(q); // 政策改善 actionL
 					}
 					int action = selectAction(time, policy); // 行動選択
-					outputAction.append("\t").append(action);
-					if (action != Integer.MAX_VALUE) {
-						double reward = doAction(time, action); // 行動実行
-						rewardSum += reward;
-						if (t > 0) {
-							updateX(e, t, state, action);
-							updateR(e, t, reward);
-						}
-						paction = action;
-						pstate = state;
-					}
+					double reward = doAction(time, action); // 行動実行
+					rewardSum += reward;
+					updateData(e, t, state, action);
+					updateR(e, t, reward);
 				}
 				results[l][e] = rewardSum;
 			}
-			outputAction.append("\n");
-			outputXR(l);
 			evaluatePolicy();// 政策評価
-			// outputPolicy(l);
 			outputTheta(l);
-			stringOutputString(outputAction.toString(), OUTPUT_PARAM_DIR,
-					"action-" + l + ".txt", "UTF-8");
-			double avgReward = 0.0;
-			for (int i = 0; i < episordNum; i++) {
-				avgReward += results[l][i];
-			}
-			avgReward = avgReward / episordNum;
-			if (avgReward > 80) {
-				System.out.println();
-			}
 		}
 		return results;
 	}
@@ -228,20 +198,20 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 *
 	 * @return
 	 */
-	private static double[][] getDistance(double[] state, int action) {
+	private static double[] getDistance(double[] state, int action) {
 		double[] stateAction = new double[actionStateDimention];
 		for (int i = 0; i < state.length; i++) {
 			stateAction[i] = state[i];
 		}
 		stateAction[stateAction.length - 1] = action;
 
-		double[][] distances = new double[episordNum][timeNum]; // M*T
+		double[] distances = new double[episordNum * (timeNum)]; // M*T
 		// 中心ベクトルと状態ベクトルの距離
 		for (int i = 0; i < episordNum; i++) {
 			for (int j = 0; j < timeNum; j++) {
 				for (int t = 0; t < actionStateDimention; t++) {
-					distances[i][j] += (pdata[i][j][t] - stateAction[t])
-							* (pdata[i][j][t] - stateAction[t]);
+					distances[i * (timeNum) + j] += (pdata[i * (timeNum) + j][t] - stateAction[t])
+							* (pdata[i * (timeNum) + j][t] - stateAction[t]);
 				}
 			}
 		}
@@ -254,13 +224,11 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 * @return
 	 */
 	private static double[][] getCurrentPhis(double[] state, int action) {
-		double[][] distance = getDistance(state, action); // 距離 B
-		double[][] phis = new double[episordNum][timeNum];
+		double[] distance = getDistance(state, action); // 距離 B
+		double[][] phis = new double[episordNum * (timeNum)][1];
 		// 動径基底関数(RBF)
 		for (int i = 0; i < phis.length; i++) {
-			for (int j = 0; j < timeNum; j++) {
-				phis[i][j] = Math.exp(-distance[i][j] / (2 * width * width));
-			}
+			phis[i][0] = Math.exp(-distance[i] / (2 * width * width));
 		}
 		return phis;
 	}
@@ -273,9 +241,12 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	private static double[] getQ(double[] state) {
 		double[] q = new double[actionNum];
 		for (int i = 0; i < actionNum; i++) {
-			for (int j = 0; j < phis.length; j++) {
-				double[][] phis = getCurrentPhis(state, i);
-				q[i] += theta[j][i] * phis[i][j];
+			double[][] phis = getCurrentPhis(state, i);
+			for (int s = 0; s < episordNum; s++) {
+				for (int t = 0; t < timeNum; t++) {
+					q[i] += theta[s * (timeNum) + t][0]
+							* phis[s * (timeNum) + t][0];
+				}
 			}
 		}
 		return q;
@@ -312,6 +283,7 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 * @return
 	 */
 	private static double[] updatePolicy(double[] q) {
+		double[] policy = new double[actionNum];
 		double denominator = 0.0;
 		for (int i = 0; i < q.length; i++) {
 			denominator += Math.exp(q[i] / tau);
@@ -336,7 +308,7 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 		int a = 0;
 		int count = 0;
 		while (count < 10) {
-			a = selectRandomAction();
+			a = selectRandomAction(policy);
 			for (int i = 0; i < actions.length; i++) {
 				if (actions[i] == a) {
 					return a;
@@ -344,7 +316,7 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 			}
 			count++;
 		}
-		return selectLastAction();
+		return selectLastAction(policy);
 	}
 
 	/**
@@ -352,7 +324,7 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 *
 	 * @return
 	 */
-	private static int selectRandomAction() {
+	private static int selectRandomAction(double[] policy) {
 		double value = random.nextDouble();
 		double culmulateThreshold = 0;
 		for (int i = 0; i < policy.length; i++) {
@@ -369,7 +341,7 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 *
 	 * @return
 	 */
-	private static int selectLastAction() {
+	private static int selectLastAction(double[] policy) {
 		int maxAction = Integer.MAX_VALUE;
 		double maxValue = 0;
 
@@ -394,55 +366,16 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	}
 
 	/**
-	 * 行列X更新
+	 * 行列data更新
 	 *
 	 * @param e
 	 * @param t
 	 */
-	private static void updateX(int e, int t, double[] state, int action) {
-		double[][] aphi = getAphi(state, action); // B*actionL
-		double[][] pphi = getPphi(); // B*actionL
-		for (int i = 0; i < aphi.length; i++) {
-			for (int j = 0; j < aphi[i].length; j++) {
-				x[e][t - 1][i][j] = pphi[i][j] - gamma * aphi[i][j];
-			}
+	private static void updateData(int e, int t, double[] state, int action) {
+		for (int i = 0; i < state.length; i++) {
+			data[e * (timeNum) + t][i] = state[i];
 		}
-	}
-
-	/**
-	 * aphi B*actionL
-	 *
-	 * @param state
-	 * @param action
-	 * @return
-	 */
-	private static double[][] getAphi(double[] state, int action) {
-		double[][] aphi = new double[centers.length][actionNum];
-		// 初期化
-		for (int i = 0; i < aphi.length; i++) {
-			for (int j = 0; j < aphi[i].length; j++) {
-				aphi[i][j] = 1.0;
-			}
-		}
-		// 更新
-		for (int a = 0; a < actionNum; a++) {
-			double[][] tmpPhi = getPhi(state, a); // B*actionL
-			for (int i = 0; i < aphi.length; i++) {
-				for (int j = 0; j < aphi[i].length; j++) {
-					aphi[i][j] += tmpPhi[i][j] * policy[a];
-				}
-			}
-		}
-		return aphi;
-	}
-
-	/**
-	 * pphi取得 B*actionL
-	 *
-	 * @return
-	 */
-	private static double[][] getPphi() {
-		return getPhi(pstate, paction);
+		data[e * (timeNum) + t][state.length - 1] = action;
 	}
 
 	/**
@@ -452,14 +385,27 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 * @param action
 	 * @return
 	 */
-	private static double[][] getPhi(double state[], int action) {
-		double[] distance = getDistance(state); // 距離 B
-		double[][] phis = new double[distance.length][actionNum];
+	private static double[] getKernelPhi(int mt) {
+		double[] distance = getKernelDistance(mt); // 距離 B
+		double[] phis = new double[distance.length];
 		// 動径基底関数(RBF)
 		for (int i = 0; i < phis.length; i++) {
-			phis[i][action] = Math.exp(-distance[i] / (2 * width * width));
+			phis[i] = Math.exp(-distance[i] / (2 * width * width));
 		}
 		return phis;
+	}
+
+	private static double[] getKernelDistance(int mt) {
+		double[] distance = new double[episordNum * (timeNum)];
+		for (int i = 0; i < episordNum; i++) {
+			for (int j = 0; j < timeNum; j++) {
+				for (int s = 0; s < actionStateDimention; s++) {
+					double tmp = data[i * (timeNum) + j][s] - data[mt][s];
+					distance[i * (timeNum) + j] += tmp * tmp;
+				}
+			}
+		}
+		return distance;
 	}
 
 	/**
@@ -470,7 +416,7 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 * @param reward
 	 */
 	private static void updateR(int e, int t, double reward) {
-		r[e][t - 1] = reward;
+		r[e * (timeNum) + t][0] = reward;
 	}
 
 	/**
@@ -479,24 +425,23 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	 * @return
 	 */
 	private static void evaluatePolicy() {
-		double[][] tmpX = convertX();
-		double[][] tmpR = convertR();
-		RealMatrix realX = MatrixUtils.createRealMatrix(tmpX);
-		RealMatrix realTransposedX = realX.transpose();
-		RealMatrix realR = MatrixUtils.createRealMatrix(tmpR);
-		RealMatrix realXX = realTransposedX.multiply(realX);
-		// RealMatrix realXX = multipleMatrix(realTransposedX.getData(),
-		// realX.getData());
-		RealMatrix inverse = new SingularValueDecomposition(realXX).getSolver()
-				.getInverse(); // Moore Penrose逆行列
-		RealMatrix result = inverse.multiply(realTransposedX).multiply(realR);
+		for (int i = 0; i < episordNum * (timeNum); i++) {
+			k[i] = getKernelPhi(i);
+		}
+		RealMatrix realK = MatrixUtils.createRealMatrix(k);
+		RealMatrix realTransposedK = realK.transpose();
+		RealMatrix inverseK = new SingularValueDecomposition(realTransposedK)
+				.getSolver().getInverse(); // Moore Penrose逆行列
+		RealMatrix realR = MatrixUtils.createRealMatrix(r);
+		RealMatrix result = inverseK.multiply(realR);
 		updateTheta(result.getData());
+		pdata = data;
 	}
 
 	private static void updateTheta(double[][] data) {
-		for (int i = 0; i < theta.length; i++) { // B
-			for (int j = 0; j < theta[i].length; j++) { // actionNum
-				theta[i][j] = data[i * actionNum + j][0];
+		for (int i = 0; i < episordNum; i++) { // B
+			for (int j = 0; j < timeNum; j++) { // actionNum
+				theta[i * (timeNum) + j][0] = data[i * (timeNum) + j][0];
 			}
 		}
 	}
@@ -514,41 +459,6 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 		}
 		RealMatrix matrix = MatrixUtils.createRealMatrix(result);
 		return matrix;
-	}
-
-	/**
-	 * 4次元を２次元に変換
-	 *
-	 * @return
-	 */
-	private static double[][] convertX() {
-		double[][] result = new double[episordNum * (timeNum - 1)][centers.length
-				* actionNum];
-		for (int e = 0; e < x.length; e++) {
-			for (int t = 0; t < x[e].length; t++) {
-				for (int c = 0; c < x[e][t].length; c++) {
-					for (int a = 0; a < x[e][t][c].length; a++) {
-						result[e * (timeNum - 1) + t][c * actionNum + a] = x[e][t][c][a];
-					}
-				}
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * 2次元を1次元に変換
-	 *
-	 * @return
-	 */
-	private static double[][] convertR() {
-		double[][] result = new double[episordNum * (timeNum - 1)][1];
-		for (int e = 0; e < r.length; e++) {
-			for (int t = 0; t < r[e].length; t++) {
-				result[e * (timeNum - 1) + t][0] = r[e][t];
-			}
-		}
-		return result;
 	}
 
 	/**
@@ -574,47 +484,13 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 	/**
 	 * 政策出力
 	 */
-	private static void outputPolicy(int l) {
+	private static void outputPolicy(int l, double[] policy) {
 		StringBuffer result = new StringBuffer();
 		for (int i = 0; i < policy.length - 1; i++) {
 			result.append(policy[i]).append("\t");
 		}
 		result.append(policy[policy.length - 1]);
 		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "policy-" + l
-				+ ".txt", "UTF-8");
-	}
-
-	private static void outputXR(int l) {
-		double[][] tmpX = convertX();
-		StringBuffer resultX = new StringBuffer();
-		for (int i = 0; i < tmpX.length; i++) {
-			for (int j = 0; j < tmpX[i].length; j++) {
-				resultX.append("\t").append(tmpX[i][j]);
-			}
-			resultX.append("\n");
-		}
-		stringOutputString(resultX.toString(), OUTPUT_PARAM_DIR, "x-" + l
-				+ ".txt", "UTF-8");
-
-		double[][] tmpR = convertR();
-		StringBuffer resultR = new StringBuffer();
-		for (int i = 0; i < tmpR.length; i++) {
-			for (int j = 0; j < tmpR[i].length; j++) {
-				resultR.append("\t").append(tmpR[i][j]);
-			}
-			resultR.append("\n");
-		}
-		stringOutputString(resultR.toString(), OUTPUT_PARAM_DIR, "r-" + l
-				+ ".txt", "UTF-8");
-	}
-
-	private static void outputQ(int l) {
-		StringBuffer result = new StringBuffer();
-		for (int i = 0; i < policy.length - 1; i++) {
-			result.append(policy[i]).append("\t");
-		}
-		result.append(policy[policy.length - 1]);
-		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "q-" + l
 				+ ".txt", "UTF-8");
 	}
 
@@ -642,18 +518,6 @@ public class TwitterKernalLeastSquaresPolicyIteration {
 			result.append(phi[i]).append("\n");
 		}
 		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "phi.txt",
-				"UTF-8");
-	}
-
-	private static void outputCenters() {
-		StringBuffer result = new StringBuffer();
-		for (int i = 0; i < centers.length; i++) {
-			for (int j = 0; j < centers[i].length - 1; j++) {
-				result.append(centers[i][j]).append("\t");
-			}
-			result.append(centers[i][centers[i].length - 1]).append("\n");
-		}
-		stringOutputString(result.toString(), OUTPUT_PARAM_DIR, "centers.txt",
 				"UTF-8");
 	}
 
