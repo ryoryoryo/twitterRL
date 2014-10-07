@@ -22,7 +22,7 @@ public class TwitterTDLeastSquares {
 
 	private static final String INPUT_DIR = "R:/twitter-experiment-result/verβ/ver0/input/";
 
-	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver0/output3/";
+	private static final String OUTPUT_DIR = "R:/twitter-experiment-result/verβ/ver0/output3-2/";
 
 	private static final String OUTPUT_PARAM_DIR = OUTPUT_DIR + "parameter/";
 
@@ -54,7 +54,7 @@ public class TwitterTDLeastSquares {
 	private static Map<Integer, double[]> rewardMap; // ステップ・報酬
 
 	/** 反復回数 */
-	private static final int iterationNum = 10;
+	private static final int iterationNum = 5;
 
 	/** エピソード回数 */
 	private static final int episordNum = 1000;
@@ -84,7 +84,7 @@ public class TwitterTDLeastSquares {
 	private static double[][] theta; // B*actionL
 
 	/** 行列X */
-	private static double[][][][] x; // episordNum*timeNum*B * actionL
+	private static double[][] x; // episordNum*timeNum*B * actionL
 
 	/** 行列r */
 	private static double[][] r; // episordNum*timeNum
@@ -122,8 +122,8 @@ public class TwitterTDLeastSquares {
 		random = new Random();
 		policy = new double[actionNum];
 		theta = new double[centers.length][actionNum];
-		x = new double[episordNum][timeNum - 1][centers.length][actionNum];
-		r = new double[episordNum][timeNum - 1];
+		x = new double[episordNum * (timeNum - 1)][centers.length * actionNum];
+		r = new double[episordNum * (timeNum - 1)][1];
 	}
 
 	/**
@@ -161,24 +161,22 @@ public class TwitterTDLeastSquares {
 					int time = FIRST_TIME + t;
 					double state[] = readState(time); // 状態観測
 					double[] q = getQ(state); // 現在状態価値 actionNum
-					updatePolicy2(q); // 政策改善 actionL
+					updatePolicy(q); // 政策改善 actionL
 					int action = selectAction(time, policy); // 行動選択
 					outputAction.append("\t").append(action);
-					if (action != Integer.MAX_VALUE) {
-						double reward = doAction(time, action); // 行動実行
-						rewardSum += reward;
-						if (t > 0) {
-							updateX(e, t, state, action);
-							updateR(e, t, reward);
-						}
-						paction = action;
-						pstate = state;
+					double reward = doAction(time, action); // 行動実行
+					rewardSum += reward;
+					if (t > 0) {
+						updateX(e, t, state, action);
+						updateR(e, t, reward);
 					}
+					paction = action;
+					pstate = state;
 				}
 				results[l][e] = rewardSum;
 			}
 			outputAction.append("\n");
-			outputXR(l);
+			// outputXR(l);
 			evaluatePolicy();// 政策評価
 			// outputPolicy(l);
 			outputTheta(l);
@@ -403,7 +401,8 @@ public class TwitterTDLeastSquares {
 		double[][] pphi = getPphi(); // B*actionL
 		for (int i = 0; i < aphi.length; i++) {
 			for (int j = 0; j < aphi[i].length; j++) {
-				x[e][t - 1][i][j] = pphi[i][j] - gamma * aphi[i][j];
+				x[e * (timeNum - 1) + (t - 1)][i * actionNum + j] = pphi[i][j]
+						- gamma * aphi[i][j];
 			}
 		}
 	}
@@ -469,7 +468,7 @@ public class TwitterTDLeastSquares {
 	 * @param reward
 	 */
 	private static void updateR(int e, int t, double reward) {
-		r[e][t - 1] = reward;
+		r[e * (timeNum - 1) + (t - 1)][0] = reward;
 	}
 
 	/**
@@ -478,11 +477,9 @@ public class TwitterTDLeastSquares {
 	 * @return
 	 */
 	private static void evaluatePolicy() {
-		double[][] tmpX = convertX();
-		double[][] tmpR = convertR();
-		RealMatrix realX = MatrixUtils.createRealMatrix(tmpX);
+		RealMatrix realX = MatrixUtils.createRealMatrix(x);
 		RealMatrix realTransposedX = realX.transpose();
-		RealMatrix realR = MatrixUtils.createRealMatrix(tmpR);
+		RealMatrix realR = MatrixUtils.createRealMatrix(r);
 		RealMatrix realXX = realTransposedX.multiply(realX);
 		// RealMatrix realXX = multipleMatrix(realTransposedX.getData(),
 		// realX.getData());
@@ -513,41 +510,6 @@ public class TwitterTDLeastSquares {
 		}
 		RealMatrix matrix = MatrixUtils.createRealMatrix(result);
 		return matrix;
-	}
-
-	/**
-	 * 4次元を２次元に変換
-	 *
-	 * @return
-	 */
-	private static double[][] convertX() {
-		double[][] result = new double[episordNum * (timeNum - 1)][centers.length
-				* actionNum];
-		for (int e = 0; e < x.length; e++) {
-			for (int t = 0; t < x[e].length; t++) {
-				for (int c = 0; c < x[e][t].length; c++) {
-					for (int a = 0; a < x[e][t][c].length; a++) {
-						result[e * (timeNum - 1) + t][c * actionNum + a] = x[e][t][c][a];
-					}
-				}
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * 2次元を1次元に変換
-	 *
-	 * @return
-	 */
-	private static double[][] convertR() {
-		double[][] result = new double[episordNum * (timeNum - 1)][1];
-		for (int e = 0; e < r.length; e++) {
-			for (int t = 0; t < r[e].length; t++) {
-				result[e * (timeNum - 1) + t][0] = r[e][t];
-			}
-		}
-		return result;
 	}
 
 	/**
@@ -583,29 +545,29 @@ public class TwitterTDLeastSquares {
 				+ ".txt", "UTF-8");
 	}
 
-	private static void outputXR(int l) {
-		double[][] tmpX = convertX();
-		StringBuffer resultX = new StringBuffer();
-		for (int i = 0; i < tmpX.length; i++) {
-			for (int j = 0; j < tmpX[i].length; j++) {
-				resultX.append("\t").append(tmpX[i][j]);
-			}
-			resultX.append("\n");
-		}
-		stringOutputString(resultX.toString(), OUTPUT_PARAM_DIR, "x-" + l
-				+ ".txt", "UTF-8");
-
-		double[][] tmpR = convertR();
-		StringBuffer resultR = new StringBuffer();
-		for (int i = 0; i < tmpR.length; i++) {
-			for (int j = 0; j < tmpR[i].length; j++) {
-				resultR.append("\t").append(tmpR[i][j]);
-			}
-			resultR.append("\n");
-		}
-		stringOutputString(resultR.toString(), OUTPUT_PARAM_DIR, "r-" + l
-				+ ".txt", "UTF-8");
-	}
+	// private static void outputXR(int l) {
+	// double[][] tmpX = convertX();
+	// StringBuffer resultX = new StringBuffer();
+	// for (int i = 0; i < tmpX.length; i++) {
+	// for (int j = 0; j < tmpX[i].length; j++) {
+	// resultX.append("\t").append(tmpX[i][j]);
+	// }
+	// resultX.append("\n");
+	// }
+	// stringOutputString(resultX.toString(), OUTPUT_PARAM_DIR, "x-" + l
+	// + ".txt", "UTF-8");
+	//
+	// double[][] tmpR = convertR();
+	// StringBuffer resultR = new StringBuffer();
+	// for (int i = 0; i < tmpR.length; i++) {
+	// for (int j = 0; j < tmpR[i].length; j++) {
+	// resultR.append("\t").append(tmpR[i][j]);
+	// }
+	// resultR.append("\n");
+	// }
+	// stringOutputString(resultR.toString(), OUTPUT_PARAM_DIR, "r-" + l
+	// + ".txt", "UTF-8");
+	// }
 
 	private static void outputQ(int l) {
 		StringBuffer result = new StringBuffer();
